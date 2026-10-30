@@ -68,3 +68,4 @@ src/new-ui/groq-local-config.js
 
 # dataconnect generated files
 .dataconnect
+.env
