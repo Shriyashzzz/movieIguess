@@ -14,13 +14,13 @@ import {
   downloadIcon,
 } from "./prewatch-page.js";
 
-const API_KEY = "97df57ffd9278a37bc12191e00332053";
+const API_KEY = import.meta.env.VITE_TMDB_KEY;
 
 const TMDB_API = "https://api.themoviedb.org/3";
 const IMG_ORIGINAL = "https://image.tmdb.org/t/p/original";
 const IMG_W500 = "https://image.tmdb.org/t/p/w500";
 const IMG_W780 = "https://image.tmdb.org/t/p/w780";
-const YOUTUBE_STARTUP_COVER_DELAY = 5200;
+const YOUTUBE_STARTUP_COVER_DELAY = 0;
 const HERO_AUTOPLAY_ADVANCE_DELAY = 42000;
 const HERO_DESCRIPTION_COLLAPSE_DELAY = 5000;
 
@@ -517,17 +517,6 @@ const WATCH_SERVER_KEY = "movieiguess.watchServer.v1";
 function ensureKofiWidget() {
   if (document.querySelector("[data-kofi-widget]")) return;
 
-  const drawWidget = () => {
-    if (!window.kofiWidgetOverlay?.draw) return;
-
-    window.kofiWidgetOverlay.draw("christinex", {
-      type: "floating-chat",
-      "floating-chat.donateButton.text": "Support me",
-      "floating-chat.donateButton.background-color": "#d9534f",
-      "floating-chat.donateButton.text-color": "#fff",
-    });
-  };
-
   const script = document.createElement("script");
   script.src = "https://storage.ko-fi.com/cdn/scripts/overlay-widget.js";
   script.dataset.kofiWidget = "";
@@ -535,18 +524,6 @@ function ensureKofiWidget() {
 
   document.body.appendChild(script);
 }
-
-function syncKofiBadge() {
-  const shouldHideKofi = Boolean(
-    app?.querySelector(".watch-screen") ||
-    app?.querySelector(".profile-gate") ||
-    document.body.querySelector(".editor-backdrop.is-open"),
-  );
-
-  document.body.classList.toggle("hide-kofi-widget", shouldHideKofi);
-}
-
-ensureKofiWidget();
 
 const WATCH_SERVERS = [
   {
@@ -679,7 +656,7 @@ const COUNTRY_PREFERENCE_MATCHERS = {
 
 const state = {
   profile: null,
-
+  heroPaused: false,
   hero: null,
   heroItems: [],
   heroIndex: 0,
@@ -718,7 +695,6 @@ const state = {
   hoverCloseTimer: null,
   hoverCard: null,
   hoverItem: null,
-  hoverMuted: true,
 
   watchActivityCleanup: null,
 
@@ -1107,7 +1083,7 @@ function getAIMoodParams(moods = [], includeGenre = true) {
 
 function youtubeEmbedUrl(key) {
   const params = new URLSearchParams({
-    autoplay: "1",
+    autoplay: state.heroPaused ? "0" : "1",
     mute: "1",
     controls: "0",
     loop: "1",
@@ -2159,7 +2135,6 @@ function buildRecommendationSourceRows() {
 async function loadHeroTrailer() {
   state.heroVideoKey = null;
   state.heroLogoPath = null;
-  state.heroMuted = true;
 
   if (!state.hero?.id) return;
 
@@ -2167,7 +2142,6 @@ async function loadHeroTrailer() {
     const media = await loadMediaExtras(state.hero);
 
     state.heroVideoKey = media.trailerKey;
-
     state.heroLogoPath = media.logoPath;
   } catch (error) {
     console.warn("Hero trailer failed:", error);
@@ -2272,7 +2246,6 @@ async function renderHome() {
 
 function paintHome() {
   destroyHoverPreview();
-  syncKofiBadge();
 
   const profile = state.profile || getProfiles()[0];
 
@@ -2404,13 +2377,21 @@ function paintHome() {
         ${
           state.heroVideoKey
             ? `
+            <div class = "pause_mute_container"> 
+              <button
+                class="hero-mute-button hero-playpause-button"
+                data-hero-playpause
+                aria-label="${state.heroPaused ? "Play trailer" : "Pause trailer"}">
+              ${state.heroPaused ? playIcon() : pauseIcon()}
+            </button>
+
               <button
                 class="hero-mute-button"
                 data-hero-mute
-                aria-label="Unmute"
-              >
-                ${muteIcon(true)}
+               aria-label="${state.heroMuted ? "Unmute" : "Mute"}">
+                ${muteIcon(state.heroMuted)}
               </button>
+            </div>
             `
             : ""
         }
@@ -2428,8 +2409,6 @@ function paintHome() {
 
   wireHomeEvents();
 
-  setupHeroTrailer();
-  scheduleHeroAdvance();
   if (["genres", "movies", "shows"].includes(state.currentView)) {
     wireGenreControls();
     wireGenreInfiniteScroll();
@@ -3079,72 +3058,6 @@ function showToast(message) {
 function openMobileDownloadNotice() {
   document.querySelector("[data-mobile-download-notice]")?.remove();
 
-  const modal = document.createElement("div");
-  modal.className = "preplay-download-overlay mobile-download-notice-overlay";
-  modal.dataset.mobileDownloadNotice = "";
-  modal.innerHTML = `
-    <section class="preplay-download-modal mobile-download-notice" role="dialog"
-      aria-modal="true" aria-labelledby="mobile-download-notice-title">
-      <button type="button" class="preplay-download-close mobile-download-notice-close"
-        data-mobile-download-close aria-label="Close">×</button>
-      <div class="mobile-download-notice-art" aria-hidden="true">
-        <span class="mobile-download-notice-glow"></span>
-        <span class="mobile-download-notice-phone">
-          <span class="mobile-phone-speaker"></span>
-          <span class="mobile-phone-screen">
-            <span class="mobile-phone-scene mobile-phone-skeleton">
-              <i class="mobile-phone-skeleton-hero"></i>
-              <i class="mobile-phone-skeleton-line"></i>
-              <i class="mobile-phone-skeleton-line short"></i>
-              <span class="mobile-phone-skeleton-row">
-                <i></i><i></i><i></i>
-              </span>
-            </span>
-            <span class="mobile-phone-scene mobile-phone-home">
-              <b>M</b>
-              <i class="mobile-phone-feature"></i>
-              <strong>Trending Now</strong>
-              <span class="mobile-phone-poster-row"><i></i><i></i><i></i></span>
-            </span>
-            <span class="mobile-phone-scene mobile-phone-details">
-              <i class="mobile-phone-details-art"></i>
-              <strong>Movie Night</strong>
-              <span class="mobile-phone-play">▶ Play</span>
-              <span class="mobile-phone-detail-lines"><i></i><i></i></span>
-            </span>
-          </span>
-          <span class="mobile-phone-home-bar"></span>
-        </span>
-      </div>
-      <div class="mobile-download-notice-body">
-        <span class="preplay-modal-kicker">Mobile version</span>
-        <h2 id="mobile-download-notice-title">MovieIGuess mobile app is in development</h2>
-        <h5>I'm planning to not include ads and annoying pop up on this version as a thank you for the community support.</h5>
-        <aside class="mobile-download-support-card">
-          <span class="mobile-download-support-heart" aria-hidden="true">♥</span>
-          <div>
-            <strong>Support me</strong>
-            <p>I built MovieIGuess with care and I keep it free for everyone.</p>
-          </div>
-        </aside>
-
-        <img
-          class="preplay-support-qr"
-          src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https%3A%2F%2Fko-fi.com%2Fchristinex"
-          alt="QR code for Ko-fi support"
-          width="220"
-          height="220"
-        />
-
-        <a class="preplay-support-link mobile-download-support-link"
-          href="https://ko-fi.com/christinex" target="_blank" rel="noopener noreferrer">
-          <span aria-hidden="true">♥</span> Buy me a coffee
-        </a>
-        <button type="button" class="mobile-download-later" data-mobile-download-close>Maybe later</button>
-      </div>
-    </section>
-  `;
-
   document.body.appendChild(modal);
   openModalElement(modal);
 
@@ -3219,8 +3132,6 @@ function switchContentView(view) {
     stopHeroTrailer();
   }
 
-  syncKofiBadge();
-
   if (fixedType) {
     state.genreType = fixedType;
   }
@@ -3235,7 +3146,6 @@ function switchContentView(view) {
 
   if (previousView === "ai" && view !== "ai") {
     paintHome();
-    syncKofiBadge();
 
     if (isCatalogView && (shouldReloadCatalog || !state.genreItems.length)) {
       loadGenreTitles(true);
@@ -3263,12 +3173,6 @@ function switchContentView(view) {
   wireRails();
   wireCards();
   populateCardLogos();
-
-  if (view === "ai") {
-    aiChat.wire();
-    syncKofiBadge();
-    return;
-  }
 
   if (isCatalogView) {
     wireGenreControls();
@@ -3351,30 +3255,6 @@ function renderNavbar(profile) {
           Genres
         </a>
 
-        <a
-          class="${state.currentView === "languages" ? "active" : ""}"
-          href="#languages"
-          data-nav-view="languages"
-        >
-          Browse by Languages
-        </a>
-
-        <button
-          type="button"
-          class="nav-download-link"
-          data-mobile-download-nav
-        >
-          ${mobileVersionIcon()}
-          <span>Mobile Version</span>
-          <span
-            class="mobile-feature-tooltip"
-            data-mobile-feature-tooltip
-            aria-hidden="true"
-          >
-            <strong>New feature!</strong>
-            Try the Mobile Version preview
-          </span>
-        </button>
 
       </nav>
 
@@ -3588,20 +3468,6 @@ function renderNavbar(profile) {
             </span>
           </a>
 
-          <button
-            type="button"
-            class="profile-menu-link mobile-download-menu-link"
-            data-mobile-download
-          >
-            <span class="profile-menu-icon">
-              ${mobileVersionIcon()}
-            </span>
-
-            <span>
-              Mobile Version
-            </span>
-          </button>
-
           ${
             isKidsProfile
               ? `
@@ -3731,12 +3597,12 @@ function setupHeroTrailer() {
   }
 
   if (!frame || !cover) return;
-
   clearTimer("heroRevealTimer");
   clearTimer("heroCollapseTimer");
-  scheduleHeroAdvance();
 
-  state.heroMuted = true;
+  if (!state.heroPaused) {
+    scheduleHeroAdvance();
+  }
 
   /*
    * Keep YouTube non-interactive so mouse movement can never trigger
@@ -3757,14 +3623,19 @@ function setupHeroTrailer() {
   };
 
   const startTrailer = () => {
-    if (!frame.isConnected) return;
+    if (!frame.isConnected || state.heroPaused) return;
 
-    sendYouTubeCommand(frame, "mute");
+    if (state.heroMuted) {
+      sendYouTubeCommand(frame, "mute");
+    } else {
+      sendYouTubeCommand(frame, "unMute");
+      sendYouTubeCommand(frame, "setVolume", [70]);
+    }
+
     lockYouTube1080p(frame);
     sendYouTubeCommand(frame, "playVideo");
     scheduleHeroDescriptionCollapse();
   };
-
   const reinforcePlayback = () => {
     [900, 1800, 3200].forEach((delay) => {
       setTimeout(startTrailer, delay);
@@ -3815,7 +3686,7 @@ function setupHeroTrailer() {
    */
   state.heroRevealTimer = setTimeout(
     revealTrailer,
-    YOUTUBE_STARTUP_COVER_DELAY + 700,
+    YOUTUBE_STARTUP_COVER_DELAY,
   );
 }
 
@@ -3830,14 +3701,14 @@ function stopHeroTrailer() {
     frame.src = "about:blank";
   }
 }
-
 function scheduleHeroAdvance() {
   clearTimer("heroAdvanceTimer");
 
   if (
     state.currentView === "ai" ||
     state.heroItems.length < 2 ||
-    state.searchTerm
+    state.searchTerm ||
+    state.heroPaused
   ) {
     return;
   }
@@ -4925,6 +4796,7 @@ function wireHomeEvents() {
   });
 
   wireHeroMute();
+  wireHeroPlayPause();
   wireRails();
   wireCards();
 }
@@ -4989,6 +4861,46 @@ function wireHeroMute() {
     button.innerHTML = muteIcon(state.heroMuted);
 
     button.setAttribute("aria-label", state.heroMuted ? "Unmute" : "Mute");
+  };
+}
+function pauseIcon() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" />
+    </svg>
+  `;
+}
+
+function wireHeroPlayPause() {
+  const cover = app.querySelector("[data-hero-video-cover]");
+  const button = app.querySelector("[data-hero-playpause]");
+  const iframe = app.querySelector("#hero-trailer");
+  const hero = app.querySelector(".hero");
+
+  if (!button || !iframe) return;
+
+  button.onclick = (event) => {
+    event.stopPropagation();
+
+    state.heroPaused = !state.heroPaused;
+
+    if (state.heroPaused) {
+      sendYouTubeCommand(iframe, "pauseVideo");
+      clearTimer("heroAdvanceTimer"); // don't switch titles while paused
+      cover?.classList.toggle("hidden", !state.heroPaused);
+    } else {
+      sendYouTubeCommand(iframe, "playVideo");
+      scheduleHeroAdvance();
+    }
+
+    button.innerHTML = state.heroPaused ? playIcon() : pauseIcon();
+    button.setAttribute(
+      "aria-label",
+      state.heroPaused ? "Play trailer" : "Pause trailer",
+    );
+
+    // keep the button visible while paused
+    hero?.classList.toggle("hero-controls-pinned", state.heroPaused);
   };
 }
 
@@ -5390,8 +5302,6 @@ async function searchTitles(term) {
 ========================================================= */
 
 async function openDetails(item) {
-  syncKofiBadge();
-
   const type = getMediaType(item);
 
   let details = item;
@@ -6036,7 +5946,6 @@ function getWatchUrl(item, server) {
 }
 
 async function openPlayOptions(item) {
-  syncKofiBadge();
   destroyHoverPreview();
   clearTimer("heroAdvanceTimer");
   clearTimer("heroCollapseTimer");
@@ -6181,8 +6090,6 @@ async function openWatch(item) {
       </div>
     </section>
   `;
-
-  syncKofiBadge();
 
   setTimeout(() => {
     app.querySelector("[data-watch-rating]")?.classList.add("hidden");

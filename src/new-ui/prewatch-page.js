@@ -19,12 +19,12 @@
     escapeHTML,
     chevronLeftIcon,
     IMG_ORIGINAL,
-    IMG_W500
+    IMG_W500,
   } = deps;
 
   let media = {
     details: item,
-    logoPath: null
+    logoPath: null,
   };
 
   let credits = null;
@@ -34,10 +34,10 @@
 
     [media, credits] = await Promise.all([
       loadMediaExtras(item),
-      api(`/${type}/${item.id}/credits?language=en-US`)
+      api(`/${type}/${item.id}/credits?language=en-US`),
     ]);
   } catch (error) {
-    console.warn('Pre-watch media unavailable:', error);
+    console.warn("Pre-watch media unavailable:", error);
   }
 
   const details = {
@@ -45,43 +45,46 @@
     ...(media.details || {}),
     // Preserve episode selection supplied by the pre-watch episode picker.
     watchSeason: item.watchSeason || media.details?.watchSeason || 1,
-    watchEpisode: item.watchEpisode || media.details?.watchEpisode || 1
+    watchEpisode: item.watchEpisode || media.details?.watchEpisode || 1,
   };
 
   const progress = getWatchProgress(details);
   const title = getItemTitle(details);
   const isSaved = isInProfileList(details);
   const type = getMediaType(details);
-  const isSeries = type === 'tv';
-  
+  const isSeries = type === "tv";
+
   const backdrop = details.backdrop_path
     ? `${IMG_ORIGINAL}${details.backdrop_path}`
-    : 'src/assets/details.png';
+    : "src/assets/details.png";
 
   const selectedSeason = details.watchSeason || 1;
   const selectedEpisode = details.watchEpisode || 1;
 
-  const episodeDetails = type === 'tv'
-    ? await loadEpisodeDetails(
-        details.id,
-        selectedSeason,
-        selectedEpisode,
-        api
-      )
-    : null;
+  const episodeDetails =
+    type === "tv"
+      ? await loadEpisodeDetails(
+          details.id,
+          selectedSeason,
+          selectedEpisode,
+          api,
+        )
+      : null;
 
-  const episodeTitle = type === 'tv'
-    ? `S${selectedSeason}:E${selectedEpisode} ${episodeDetails?.name || title}`
-    : title;
+  const episodeTitle =
+    type === "tv"
+      ? `S${selectedSeason}:E${selectedEpisode} ${episodeDetails?.name || title}`
+      : title;
 
-  const seasonLine = type === 'tv'
-    ? `${details.number_of_seasons || 1} Season${details.number_of_seasons === 1 ? '' : 's'}`
-    : `${getItemYear(details) || 'Movie'}${details.runtime ? ` â€¢ ${formatRuntime(details.runtime)}` : ''}`;
+  const seasonLine =
+    type === "tv"
+      ? `${details.number_of_seasons || 1} Season${details.number_of_seasons === 1 ? "" : "s"}`
+      : `${getItemYear(details) || "Movie"}${details.runtime ? ` â€¢ ${formatRuntime(details.runtime)}` : ""}`;
 
   const rating = getAgeRating(details);
 
   const actors = (credits?.cast || [])
-    .filter(actor => actor.profile_path)
+    .filter((actor) => actor.profile_path)
     .slice(0, 6);
 
   const featuredActor = actors[0];
@@ -152,8 +155,8 @@
           <p class="preplay-description">
             ${escapeHTML(
               episodeDetails?.overview ||
-              details.overview ||
-              'Choose how you want to start watching.'
+                details.overview ||
+                "Choose how you want to start watching.",
             )}
           </p>
 
@@ -175,15 +178,15 @@
 
             <button
               type="button"
-              class="preplay-action-button saved ${isSaved ? 'is-saved' : ''}"
+              class="preplay-action-button saved ${isSaved ? "is-saved" : ""}"
               data-preplay-save
             >
               <span class="preplay-action-icon">
-                ${isSaved ? 'âœ“' : '+'}
+                ${isSaved ? "âœ“" : "+"}
               </span>
 
               <span>
-                ${isSaved ? 'Saved' : 'Save'}
+                ${isSaved ? "Saved" : "Save"}
               </span>
             </button>
 
@@ -216,71 +219,59 @@
                     </span>
                   </button>
                 `
-                : ''
+                : ""
             }
 
           </div>
         </div>
 
-        ${renderActors(
-          featuredActor,
-          actors,
-          title,
-          escapeHTML,
-          IMG_W500
-        )}
+        ${renderActors(featuredActor, actors, title, escapeHTML, IMG_W500)}
       </div>
     </section>
   `;
 
-  app.querySelector('[data-preplay-close]').onclick = onBack;
+  app.querySelector("[data-preplay-close]").onclick = onBack;
 
-  app
-    .querySelectorAll('[data-preplay-play]')
-    .forEach(button => {
-      button.onclick = () => {
-        const mode = button.dataset.preplayWatch;
+  app.querySelectorAll("[data-preplay-play]").forEach((button) => {
+    button.onclick = () => {
+      const mode = button.dataset.preplayWatch;
 
-        saveWatchProgress(details, {
-          startedAt: Date.now(),
-          mode,
-          season: selectedSeason,
-          episode: selectedEpisode
-        });
+      saveWatchProgress(details, {
+        startedAt: Date.now(),
+        mode,
+        season: selectedSeason,
+        episode: selectedEpisode,
+      });
 
-        openWatch(details);
-      };
-    });
+      openWatch(details);
+    };
+  });
 
-  app.querySelector('[data-preplay-save]').onclick = event => {
+  app.querySelector("[data-preplay-save]").onclick = (event) => {
     const result = saveToProfileList(details);
 
-    event.currentTarget.classList.add('saved');
-    event.currentTarget.textContent = 'âœ“ Saved';
+    event.currentTarget.classList.add("saved");
+    event.currentTarget.textContent = "âœ“ Saved";
 
-    showToast(
-      result.added
-        ? 'Added to My List'
-        : 'Already saved in My List'
-    );
+    showToast(result.added ? "Added to My List" : "Already saved in My List");
 
     markCardSaved(details);
   };
 
   app
-    .querySelector('[data-preplay-download]')
-    ?.addEventListener('click', () => {
+    .querySelector("[data-preplay-download]")
+    ?.addEventListener("click", () => {
       openDownloadModal(details, {
         ...deps,
         selectedSeason,
         selectedEpisode,
-        episodeTitle
+        episodeTitle,
       });
     });
 
   app
-    .querySelector('[data-preplay-episodes]')
-    ?.addEventListener('click', () => {
+    .querySelector("[data-preplay-episodes]")
+    ?.addEventListener("click", () => {
       openEpisodePicker(details, {
         ...deps,
         selectedSeason,
@@ -290,11 +281,11 @@
             {
               ...details,
               watchSeason: seasonNumber,
-              watchEpisode: episodeNumber
+              watchEpisode: episodeNumber,
             },
-            deps
+            deps,
           );
-        }
+        },
       });
     });
 
@@ -308,25 +299,25 @@ export function openDownloadModal(details, options) {
     getMediaType,
     selectedSeason,
     selectedEpisode,
-    episodeTitle
+    episodeTitle,
   } = options;
 
   const modalHost =
-    options.container ||
-    app.querySelector('.preplay-page') ||
-    document.body;
+    options.container || app.querySelector(".preplay-page") || document.body;
 
-  modalHost.querySelector('[data-download-confirmation]')?.remove();
+  modalHost.querySelector("[data-download-confirmation]")?.remove();
 
   const type = getMediaType(details);
-  const title = details.title || details.name || 'this title';
-  const confirmationTitle = type === 'tv'
-    ? episodeTitle || `${title} S${selectedSeason || 1}:E${selectedEpisode || 1}`
-    : title;
+  const title = details.title || details.name || "this title";
+  const confirmationTitle =
+    type === "tv"
+      ? episodeTitle ||
+        `${title} S${selectedSeason || 1}:E${selectedEpisode || 1}`
+      : title;
 
-  const overlay = document.createElement('div');
-  overlay.className = 'preplay-download-overlay';
-  overlay.dataset.downloadConfirmation = '';
+  const overlay = document.createElement("div");
+  overlay.className = "preplay-download-overlay";
+  overlay.dataset.downloadConfirmation = "";
   overlay.innerHTML = `
     <section
       class="preplay-download-modal preplay-download-confirmation"
@@ -366,15 +357,6 @@ export function openDownloadModal(details, options) {
           height="220"
         />
 
-        <a
-          class="preplay-support-link"
-          href="https://ko-fi.com/christinex"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Support me on Ko-fi
-        </a>
-
         <button
           type="button"
           class="preplay-confirm-download"
@@ -387,21 +369,25 @@ export function openDownloadModal(details, options) {
   `;
 
   modalHost.appendChild(overlay);
-  requestAnimationFrame(() => overlay.classList.add('is-open'));
+  requestAnimationFrame(() => overlay.classList.add("is-open"));
 
   const close = () => {
-    overlay.classList.remove('is-open');
+    overlay.classList.remove("is-open");
     setTimeout(() => overlay.remove(), 220);
   };
 
-  overlay.querySelector('[data-download-confirmation-close]')?.addEventListener('click', close);
-  overlay.addEventListener('click', event => {
+  overlay
+    .querySelector("[data-download-confirmation-close]")
+    ?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => {
     if (event.target === overlay) close();
   });
-  overlay.querySelector('[data-confirm-download]')?.addEventListener('click', () => {
-    close();
-    openDownloadOptionsModal(details, options);
-  });
+  overlay
+    .querySelector("[data-confirm-download]")
+    ?.addEventListener("click", () => {
+      close();
+      openDownloadOptionsModal(details, options);
+    });
 }
 
 async function openDownloadOptionsModal(details, options) {
@@ -413,40 +399,35 @@ async function openDownloadOptionsModal(details, options) {
     IMG_W500,
     selectedSeason,
     selectedEpisode,
-    episodeTitle
+    episodeTitle,
   } = options;
 
   const modalHost =
-    options.container ||
-    app.querySelector('.preplay-page') ||
-    document.body;
+    options.container || app.querySelector(".preplay-page") || document.body;
 
-  modalHost.querySelector('[data-preplay-download-modal]')?.remove();
-  app.querySelector('[data-preplay-download-modal]')?.remove();
+  modalHost.querySelector("[data-preplay-download-modal]")?.remove();
+  app.querySelector("[data-preplay-download-modal]")?.remove();
 
   const type = options.getMediaType(details);
-  const seasons = type === 'tv'
-    ? (details.seasons || []).filter(season => season.season_number > 0)
-    : [];
+  const seasons =
+    type === "tv"
+      ? (details.seasons || []).filter((season) => season.season_number > 0)
+      : [];
 
-  let activeSeason = type === 'tv'
-    ? seasons[0]?.season_number || 1
-    : selectedSeason || 1;
-  let activeEpisode = type === 'tv'
-    ? 1
-    : selectedEpisode || 1;
-  let activeEpisodeTitle = type === 'tv'
-    ? ''
-    : episodeTitle || '';
+  let activeSeason =
+    type === "tv" ? seasons[0]?.season_number || 1 : selectedSeason || 1;
+  let activeEpisode = type === "tv" ? 1 : selectedEpisode || 1;
+  let activeEpisodeTitle = type === "tv" ? "" : episodeTitle || "";
 
-  const overlay = document.createElement('div');
-  overlay.className = 'preplay-download-overlay';
-  overlay.dataset.preplayDownloadModal = '';
+  const overlay = document.createElement("div");
+  overlay.className = "preplay-download-overlay";
+  overlay.dataset.preplayDownloadModal = "";
 
-  const getSeriesTitle = () => details.name || details.title || 'Series';
-  const getSelectionText = () => type === 'tv'
-    ? `${getSeriesTitle()} S${activeSeason}:E${activeEpisode}`
-    : (details.title || details.name || 'Movie');
+  const getSeriesTitle = () => details.name || details.title || "Series";
+  const getSelectionText = () =>
+    type === "tv"
+      ? `${getSeriesTitle()} S${activeSeason}:E${activeEpisode}`
+      : details.title || details.name || "Movie";
 
   overlay.innerHTML = `
     <section class="preplay-download-modal" role="dialog" aria-modal="true" aria-labelledby="preplay-download-title">
@@ -466,7 +447,7 @@ async function openDownloadOptionsModal(details, options) {
       </header>
 
       <div class="preplay-download-body">
-        ${type === 'tv' ? renderDownloadPickers(seasons, activeSeason, activeEpisode, escapeHTML, chevronDownIcon) : ''}
+        ${type === "tv" ? renderDownloadPickers(seasons, activeSeason, activeEpisode, escapeHTML, chevronDownIcon) : ""}
         <div data-download-modal-body>
           <div class="preplay-download-loading">
             <span class="preplay-download-spinner" aria-hidden="true"></span>
@@ -478,47 +459,51 @@ async function openDownloadOptionsModal(details, options) {
   `;
 
   modalHost.appendChild(overlay);
-  requestAnimationFrame(() => overlay.classList.add('is-open'));
+  requestAnimationFrame(() => overlay.classList.add("is-open"));
 
   const close = () => {
-    overlay.classList.remove('is-open');
+    overlay.classList.remove("is-open");
     setTimeout(() => overlay.remove(), 220);
   };
 
-  overlay.querySelector('[data-download-modal-close]')?.addEventListener('click', close);
-  overlay.addEventListener('click', event => {
+  overlay
+    .querySelector("[data-download-modal-close]")
+    ?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => {
     if (event.target === overlay) close();
   });
 
-  const body = overlay.querySelector('[data-download-modal-body]');
-  const titleNode = overlay.querySelector('[data-download-modal-title]');
-  const selectionNode = overlay.querySelector('[data-download-modal-selection]');
+  const body = overlay.querySelector("[data-download-modal-body]");
+  const titleNode = overlay.querySelector("[data-download-modal-title]");
+  const selectionNode = overlay.querySelector(
+    "[data-download-modal-selection]",
+  );
   let requestId = 0;
 
   const updateHeading = () => {
-    if (type !== 'tv') return;
+    if (type !== "tv") return;
     titleNode.textContent = activeEpisodeTitle || getSelectionText();
     selectionNode.textContent = getSelectionText();
   };
 
-  const closeDownloadMenu = picker => {
+  const closeDownloadMenu = (picker) => {
     const wrap = overlay.querySelector(`[data-download-${picker}-wrap]`);
     const menu = overlay.querySelector(`[data-download-${picker}-menu]`);
     const toggle = overlay.querySelector(`[data-download-${picker}-toggle]`);
-    wrap?.classList.remove('open');
-    menu?.classList.remove('open');
-    toggle?.setAttribute('aria-expanded', 'false');
+    wrap?.classList.remove("open");
+    menu?.classList.remove("open");
+    toggle?.setAttribute("aria-expanded", "false");
   };
 
-  const toggleDownloadMenu = picker => {
+  const toggleDownloadMenu = (picker) => {
     const wrap = overlay.querySelector(`[data-download-${picker}-wrap]`);
     const menu = overlay.querySelector(`[data-download-${picker}-menu]`);
     const toggle = overlay.querySelector(`[data-download-${picker}-toggle]`);
-    const isOpen = !menu?.classList.contains('open');
-    closeDownloadMenu(picker === 'season' ? 'episode' : 'season');
-    wrap?.classList.toggle('open', isOpen);
-    menu?.classList.toggle('open', isOpen);
-    toggle?.setAttribute('aria-expanded', String(Boolean(isOpen)));
+    const isOpen = !menu?.classList.contains("open");
+    closeDownloadMenu(picker === "season" ? "episode" : "season");
+    wrap?.classList.toggle("open", isOpen);
+    menu?.classList.toggle("open", isOpen);
+    toggle?.setAttribute("aria-expanded", String(Boolean(isOpen)));
   };
 
   const renderSources = async () => {
@@ -534,7 +519,7 @@ async function openDownloadOptionsModal(details, options) {
     try {
       const provider = window.MovieIGuessDownloadProvider;
 
-      if (!provider || typeof provider.getSources !== 'function') {
+      if (!provider || typeof provider.getSources !== "function") {
         body.innerHTML = `
           <div class="preplay-download-empty">
             <span class="preplay-download-empty-icon">${downloadIcon()}</span>
@@ -559,35 +544,42 @@ async function openDownloadOptionsModal(details, options) {
             <span class="preplay-download-spinner" aria-hidden="true"></span>
             <strong>Finding download options...</strong>
             <div class="preplay-download-progress-list">
-              ${entries.map(([providerId, progress]) => `
+              ${entries
+                .map(
+                  ([providerId, progress]) => `
                 <div class="preplay-download-progress-row">
                   <div class="preplay-download-progress-copy">
                     <span>${escapeHTML(providerId)}</span>
-                    <small>${escapeHTML(progress.status === 'error' ? 'Failed' : `${Math.max(0, Math.min(100, progress.percentage || 0))}%`)}</small>
+                    <small>${escapeHTML(progress.status === "error" ? "Failed" : `${Math.max(0, Math.min(100, progress.percentage || 0))}%`)}</small>
                   </div>
                   <div class="preplay-download-progress-track">
                     <span style="width:${Math.max(0, Math.min(100, progress.percentage || 0))}%"></span>
                   </div>
                 </div>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </div>
           </div>
         `;
       };
 
-      const result = await provider.getSources({
-        id: details.id,
-        tmdbId: details.id,
-        type,
-        title: details.title || details.name || '',
-        season: type === 'tv' ? activeSeason : null,
-        episode: type === 'tv' ? activeEpisode : null
-      }, {
-        onProgress(progress) {
-          progressState.set(progress.provider || 'provider', progress);
-          renderProgress();
-        }
-      });
+      const result = await provider.getSources(
+        {
+          id: details.id,
+          tmdbId: details.id,
+          type,
+          title: details.title || details.name || "",
+          season: type === "tv" ? activeSeason : null,
+          episode: type === "tv" ? activeEpisode : null,
+        },
+        {
+          onProgress(progress) {
+            progressState.set(progress.provider || "provider", progress);
+            renderProgress();
+          },
+        },
+      );
 
       if (currentRequest !== requestId) return;
 
@@ -597,11 +589,11 @@ async function openDownloadOptionsModal(details, options) {
           ? result.sources
           : [];
 
-      const safeSources = sources.filter(source => {
+      const safeSources = sources.filter((source) => {
         if (!source?.url) return false;
         try {
           const url = new URL(source.url, window.location.href);
-          return url.protocol === 'https:' || url.protocol === 'http:';
+          return url.protocol === "https:" || url.protocol === "http:";
         } catch {
           return false;
         }
@@ -620,7 +612,9 @@ async function openDownloadOptionsModal(details, options) {
 
       body.innerHTML = `
         <div class="preplay-download-list">
-          ${safeSources.map((source, index) => `
+          ${safeSources
+            .map(
+              (source, index) => `
             <a
               class="preplay-download-source"
               href="${escapeHTML(source.url)}"
@@ -630,15 +624,17 @@ async function openDownloadOptionsModal(details, options) {
               <span class="preplay-download-source-icon">${downloadIcon()}</span>
               <span class="preplay-download-source-copy">
                 <strong>${escapeHTML(source.label || source.name || `Download ${index + 1}`)}</strong>
-                ${source.meta ? `<small>${escapeHTML(source.meta)}</small>` : ''}
+                ${source.meta ? `<small>${escapeHTML(source.meta)}</small>` : ""}
               </span>
               <span class="preplay-download-source-arrow">›</span>
             </a>
-          `).join('')}
+          `,
+            )
+            .join("")}
         </div>
       `;
     } catch (error) {
-      console.warn('Download provider unavailable:', error);
+      console.warn("Download provider unavailable:", error);
       body.innerHTML = `
         <div class="preplay-download-empty error">
           <strong>Could not load downloads</strong>
@@ -648,26 +644,33 @@ async function openDownloadOptionsModal(details, options) {
     }
   };
 
-  const renderEpisodes = async seasonNumber => {
-    if (type !== 'tv' || !api) {
+  const renderEpisodes = async (seasonNumber) => {
+    if (type !== "tv" || !api) {
       renderSources();
       return;
     }
 
-    const episodeMenu = overlay.querySelector('[data-download-episode-menu]');
-    const episodeLabel = overlay.querySelector('[data-download-episode-label]');
-    episodeMenu.innerHTML = '<button type="button" disabled>Loading episodes...</button>';
+    const episodeMenu = overlay.querySelector("[data-download-episode-menu]");
+    const episodeLabel = overlay.querySelector("[data-download-episode-label]");
+    episodeMenu.innerHTML =
+      '<button type="button" disabled>Loading episodes...</button>';
 
     try {
-      const season = await api(`/tv/${details.id}/season/${seasonNumber}?language=en-US`);
+      const season = await api(
+        `/tv/${details.id}/season/${seasonNumber}?language=en-US`,
+      );
       const episodes = season.episodes || [];
-      const selectedExists = episodes.some(episode => episode.episode_number === activeEpisode);
+      const selectedExists = episodes.some(
+        (episode) => episode.episode_number === activeEpisode,
+      );
 
       if (!selectedExists) {
         activeEpisode = episodes[0]?.episode_number || 1;
       }
 
-      const activeEpisodeData = episodes.find(episode => episode.episode_number === activeEpisode);
+      const activeEpisodeData = episodes.find(
+        (episode) => episode.episode_number === activeEpisode,
+      );
       activeEpisodeTitle = activeEpisodeData?.name
         ? `S${activeSeason}:E${activeEpisode} ${activeEpisodeData.name}`
         : `${getSeriesTitle()} S${activeSeason}:E${activeEpisode}`;
@@ -676,72 +679,98 @@ async function openDownloadOptionsModal(details, options) {
         : `Episode ${activeEpisode}`;
 
       episodeMenu.innerHTML = episodes.length
-        ? episodes.map(episode => renderDownloadEpisodeOption(episode, activeEpisode, details, IMG_W500, escapeHTML)).join('')
+        ? episodes
+            .map((episode) =>
+              renderDownloadEpisodeOption(
+                episode,
+                activeEpisode,
+                details,
+                IMG_W500,
+                escapeHTML,
+              ),
+            )
+            .join("")
         : '<button type="button" disabled>No episodes available</button>';
 
-      episodeMenu.querySelectorAll('[data-download-episode-option]').forEach(button => {
-        button.addEventListener('click', event => {
-          event.stopPropagation();
-          activeEpisode = Number(button.dataset.downloadEpisodeOption);
-          const episode = episodes.find(item => item.episode_number === activeEpisode);
-          activeEpisodeTitle = episode?.name
-            ? `S${activeSeason}:E${activeEpisode} ${episode.name}`
-            : `${getSeriesTitle()} S${activeSeason}:E${activeEpisode}`;
-          episodeLabel.textContent = episode?.name
-            ? `E${activeEpisode} • ${episode.name}`
-            : `Episode ${activeEpisode}`;
-          episodeMenu.querySelectorAll('[data-download-episode-option]').forEach(option => {
-            const isActive = option === button;
-            option.classList.toggle('active', isActive);
-            option.setAttribute('aria-selected', String(isActive));
+      episodeMenu
+        .querySelectorAll("[data-download-episode-option]")
+        .forEach((button) => {
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            activeEpisode = Number(button.dataset.downloadEpisodeOption);
+            const episode = episodes.find(
+              (item) => item.episode_number === activeEpisode,
+            );
+            activeEpisodeTitle = episode?.name
+              ? `S${activeSeason}:E${activeEpisode} ${episode.name}`
+              : `${getSeriesTitle()} S${activeSeason}:E${activeEpisode}`;
+            episodeLabel.textContent = episode?.name
+              ? `E${activeEpisode} • ${episode.name}`
+              : `Episode ${activeEpisode}`;
+            episodeMenu
+              .querySelectorAll("[data-download-episode-option]")
+              .forEach((option) => {
+                const isActive = option === button;
+                option.classList.toggle("active", isActive);
+                option.setAttribute("aria-selected", String(isActive));
+              });
+            closeDownloadMenu("episode");
+            updateHeading();
+            renderSources();
           });
-          closeDownloadMenu('episode');
-          updateHeading();
-          renderSources();
         });
-      });
 
       updateHeading();
       renderSources();
     } catch (error) {
-      console.warn('Download episode selector unavailable:', error);
-      episodeMenu.innerHTML = '<button type="button" disabled>Could not load episodes</button>';
+      console.warn("Download episode selector unavailable:", error);
+      episodeMenu.innerHTML =
+        '<button type="button" disabled>Could not load episodes</button>';
       updateHeading();
       renderSources();
     }
   };
 
-  if (type === 'tv') {
-    overlay.querySelector('[data-download-season-toggle]')?.addEventListener('click', event => {
-      event.stopPropagation();
-      toggleDownloadMenu('season');
-    });
-
-    overlay.querySelector('[data-download-episode-toggle]')?.addEventListener('click', event => {
-      event.stopPropagation();
-      toggleDownloadMenu('episode');
-    });
-
-    overlay.querySelectorAll('[data-download-season-option]').forEach(button => {
-      button.addEventListener('click', event => {
+  if (type === "tv") {
+    overlay
+      .querySelector("[data-download-season-toggle]")
+      ?.addEventListener("click", (event) => {
         event.stopPropagation();
-        activeSeason = Number(button.dataset.downloadSeasonOption);
-        activeEpisode = 1;
-        overlay.querySelector('[data-download-season-label]').textContent =
-          button.querySelector('strong')?.textContent || `Season ${activeSeason}`;
-        overlay.querySelectorAll('[data-download-season-option]').forEach(option => {
-          const isActive = option === button;
-          option.classList.toggle('active', isActive);
-          option.setAttribute('aria-selected', String(isActive));
-        });
-        closeDownloadMenu('season');
-        renderEpisodes(activeSeason);
+        toggleDownloadMenu("season");
       });
-    });
 
-    overlay.addEventListener('click', () => {
-      closeDownloadMenu('season');
-      closeDownloadMenu('episode');
+    overlay
+      .querySelector("[data-download-episode-toggle]")
+      ?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleDownloadMenu("episode");
+      });
+
+    overlay
+      .querySelectorAll("[data-download-season-option]")
+      .forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          activeSeason = Number(button.dataset.downloadSeasonOption);
+          activeEpisode = 1;
+          overlay.querySelector("[data-download-season-label]").textContent =
+            button.querySelector("strong")?.textContent ||
+            `Season ${activeSeason}`;
+          overlay
+            .querySelectorAll("[data-download-season-option]")
+            .forEach((option) => {
+              const isActive = option === button;
+              option.classList.toggle("active", isActive);
+              option.setAttribute("aria-selected", String(isActive));
+            });
+          closeDownloadMenu("season");
+          renderEpisodes(activeSeason);
+        });
+      });
+
+    overlay.addEventListener("click", () => {
+      closeDownloadMenu("season");
+      closeDownloadMenu("episode");
     });
 
     renderEpisodes(activeSeason);
@@ -750,7 +779,13 @@ async function openDownloadOptionsModal(details, options) {
   }
 }
 
-function renderDownloadPickers(seasons, activeSeason, activeEpisode, escapeHTML, chevronDownIcon) {
+function renderDownloadPickers(
+  seasons,
+  activeSeason,
+  activeEpisode,
+  escapeHTML,
+  chevronDownIcon,
+) {
   return `
     <div class="download-episode-controls">
       <div class="download-picker">
@@ -763,14 +798,16 @@ function renderDownloadPickers(seasons, activeSeason, activeEpisode, escapeHTML,
             aria-haspopup="listbox"
             aria-expanded="false"
           >
-            <span data-download-season-label>${escapeHTML(seasons.find(season => season.season_number === activeSeason)?.name || `Season ${activeSeason}`)}</span>
+            <span data-download-season-label>${escapeHTML(seasons.find((season) => season.season_number === activeSeason)?.name || `Season ${activeSeason}`)}</span>
             ${chevronDownIcon()}
           </button>
           <div class="season-menu download-select-menu" data-download-season-menu role="listbox">
-            ${seasons.map(season => `
+            ${seasons
+              .map(
+                (season) => `
               <button
                 type="button"
-                class="${season.season_number === activeSeason ? 'active' : ''}"
+                class="${season.season_number === activeSeason ? "active" : ""}"
                 data-download-season-option="${season.season_number}"
                 role="option"
                 aria-selected="${season.season_number === activeSeason}"
@@ -778,7 +815,9 @@ function renderDownloadPickers(seasons, activeSeason, activeEpisode, escapeHTML,
                 <strong>${escapeHTML(season.name || `Season ${season.season_number}`)}</strong>
                 <small>${escapeHTML(`${season.episode_count || 0} episodes`)}</small>
               </button>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </div>
         </div>
       </div>
@@ -805,17 +844,23 @@ function renderDownloadPickers(seasons, activeSeason, activeEpisode, escapeHTML,
   `;
 }
 
-function renderDownloadEpisodeOption(episode, activeEpisode, details, IMG_W500, escapeHTML) {
+function renderDownloadEpisodeOption(
+  episode,
+  activeEpisode,
+  details,
+  IMG_W500,
+  escapeHTML,
+) {
   const still = episode.still_path
     ? `${IMG_W500}${episode.still_path}`
     : details.backdrop_path && IMG_W500
       ? `${IMG_W500}${details.backdrop_path}`
-      : 'src/assets/details.png';
+      : "src/assets/details.png";
 
   return `
     <button
       type="button"
-      class="${episode.episode_number === activeEpisode ? 'active' : ''}"
+      class="${episode.episode_number === activeEpisode ? "active" : ""}"
       data-download-episode-option="${episode.episode_number}"
       role="option"
       aria-selected="${episode.episode_number === activeEpisode}"
@@ -823,7 +868,7 @@ function renderDownloadEpisodeOption(episode, activeEpisode, details, IMG_W500, 
       <img src="${still}" alt="${escapeHTML(episode.name || `Episode ${episode.episode_number}`)}" />
       <span>
         <strong>${episode.episode_number}. ${escapeHTML(episode.name || `Episode ${episode.episode_number}`)}</strong>
-        <small>${escapeHTML(episode.runtime ? `${episode.runtime}m` : 'Episode')}</small>
+        <small>${escapeHTML(episode.runtime ? `${episode.runtime}m` : "Episode")}</small>
       </span>
     </button>
   `;
@@ -831,13 +876,16 @@ function renderDownloadEpisodeOption(episode, activeEpisode, details, IMG_W500, 
 async function loadEpisodeDetails(seriesId, seasonNumber, episodeNumber, api) {
   try {
     const season = await api(
-      `/tv/${seriesId}/season/${seasonNumber}?language=en-US`
+      `/tv/${seriesId}/season/${seasonNumber}?language=en-US`,
     );
 
-    return (season.episodes || [])
-      .find(episode => episode.episode_number === episodeNumber) || null;
+    return (
+      (season.episodes || []).find(
+        (episode) => episode.episode_number === episodeNumber,
+      ) || null
+    );
   } catch (error) {
-    console.warn('Pre-watch episode unavailable:', error);
+    console.warn("Pre-watch episode unavailable:", error);
     return null;
   }
 }
@@ -851,30 +899,31 @@ export async function openEpisodePicker(details, options) {
     IMG_W500,
     selectedSeason,
     selectedEpisode,
-    onSelect
+    onSelect,
   } = options;
 
   // Reuse a single episode modal. If one already exists, remove it first.
-  app.querySelector('[data-preplay-episode-modal]')?.remove();
+  app.querySelector("[data-preplay-episode-modal]")?.remove();
 
-  const seasons = (details.seasons || [])
-    .filter(season => season.season_number > 0);
+  const seasons = (details.seasons || []).filter(
+    (season) => season.season_number > 0,
+  );
 
   if (!seasons.length) return;
 
   let activeSeasonNumber = selectedSeason || seasons[0].season_number;
   let activeEpisodeNumber = selectedEpisode || 1;
 
-  const overlay = document.createElement('div');
-  overlay.className = 'preplay-episode-overlay';
-  overlay.dataset.preplayEpisodeModal = '';
+  const overlay = document.createElement("div");
+  overlay.className = "preplay-episode-overlay";
+  overlay.dataset.preplayEpisodeModal = "";
 
   overlay.innerHTML = `
     <section class="preplay-episode-modal" role="dialog" aria-modal="true">
       <header class="preplay-episode-modal-header">
         <div>
           <span class="preplay-modal-kicker">Choose an episode</span>
-          <h2>${escapeHTML(details.name || details.title || 'Episodes')}</h2>
+          <h2>${escapeHTML(details.name || details.title || "Episodes")}</h2>
         </div>
 
         <button
@@ -899,8 +948,9 @@ export async function openEpisodePicker(details, options) {
           >
             <span data-preplay-season-label>
               ${escapeHTML(
-                seasons.find(season => season.season_number === activeSeasonNumber)?.name ||
-                `Season ${activeSeasonNumber}`
+                seasons.find(
+                  (season) => season.season_number === activeSeasonNumber,
+                )?.name || `Season ${activeSeasonNumber}`,
               )}
             </span>
 
@@ -912,17 +962,21 @@ export async function openEpisodePicker(details, options) {
             data-preplay-season-menu
             role="listbox"
           >
-            ${seasons.map(season => `
+            ${seasons
+              .map(
+                (season) => `
               <button
                 type="button"
-                class="${season.season_number === activeSeasonNumber ? 'active' : ''}"
+                class="${season.season_number === activeSeasonNumber ? "active" : ""}"
                 data-preplay-season-option="${season.season_number}"
                 role="option"
                 aria-selected="${season.season_number === activeSeasonNumber}"
               >
                 ${escapeHTML(season.name || `Season ${season.season_number}`)}
               </button>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </div>
         </div>
       </div>
@@ -936,18 +990,16 @@ export async function openEpisodePicker(details, options) {
   `;
 
   const modalHost =
-    options.container ||
-    app.querySelector('.preplay-page') ||
-    app;
+    options.container || app.querySelector(".preplay-page") || app;
 
   modalHost.appendChild(overlay);
 
   requestAnimationFrame(() => {
-    overlay.classList.add('is-open');
+    overlay.classList.add("is-open");
   });
 
   const close = () => {
-    overlay.classList.remove('is-open');
+    overlay.classList.remove("is-open");
 
     setTimeout(() => {
       overlay.remove();
@@ -955,45 +1007,46 @@ export async function openEpisodePicker(details, options) {
   };
 
   overlay
-    .querySelector('[data-episode-modal-close]')
-    .addEventListener('click', close);
+    .querySelector("[data-episode-modal-close]")
+    .addEventListener("click", close);
 
-  overlay.addEventListener('click', event => {
+  overlay.addEventListener("click", (event) => {
     if (event.target === overlay) close();
   });
 
-  const renderSeason = async seasonNumber => {
+  const renderSeason = async (seasonNumber) => {
     activeSeasonNumber = seasonNumber;
 
-    const list = overlay.querySelector('[data-preplay-episode-list]');
-    list.className = 'preplay-episode-loading';
-    list.textContent = 'Loading episodesâ€¦';
+    const list = overlay.querySelector("[data-preplay-episode-list]");
+    list.className = "preplay-episode-loading";
+    list.textContent = "Loading episodesâ€¦";
 
     try {
       const season = await api(
-        `/tv/${details.id}/season/${activeSeasonNumber}?language=en-US`
+        `/tv/${details.id}/season/${activeSeasonNumber}?language=en-US`,
       );
 
       const episodes = season.episodes || [];
 
-      list.className = 'preplay-episode-grid';
+      list.className = "preplay-episode-grid";
       list.innerHTML = episodes.length
-        ? episodes.map(episode => {
-            const still = episode.still_path
-              ? `${IMG_W500}${episode.still_path}`
-              : details.backdrop_path
-                ? `${IMG_W500}${details.backdrop_path}`
-                : 'src/assets/details.png';
+        ? episodes
+            .map((episode) => {
+              const still = episode.still_path
+                ? `${IMG_W500}${episode.still_path}`
+                : details.backdrop_path
+                  ? `${IMG_W500}${details.backdrop_path}`
+                  : "src/assets/details.png";
 
-            const isCurrent =
-              activeSeasonNumber === selectedSeason &&
-              episode.episode_number === activeEpisodeNumber;
+              const isCurrent =
+                activeSeasonNumber === selectedSeason &&
+                episode.episode_number === activeEpisodeNumber;
 
-            return `
+              return `
               <button
-                class="preplay-episode-option ${isCurrent ? 'active' : ''}"
+                class="preplay-episode-option ${isCurrent ? "active" : ""}"
                 data-preplay-episode="${episode.episode_number}"
-                ${isCurrent ? 'aria-current="true"' : ''}
+                ${isCurrent ? 'aria-current="true"' : ""}
                 type="button"
               >
                 <span class="preplay-episode-thumb">
@@ -1002,73 +1055,76 @@ export async function openEpisodePicker(details, options) {
                     alt="${escapeHTML(episode.name || `Episode ${episode.episode_number}`)}"
                   />
                   <span class="preplay-episode-play">&#9654;</span>
-                  ${isCurrent ? '<span class="preplay-current-badge">Now Watching</span>' : ''}
+                  ${isCurrent ? '<span class="preplay-current-badge">Now Watching</span>' : ""}
                 </span>
 
                 <span class="preplay-episode-info">
                   <span class="preplay-episode-heading">
                     <strong>${episode.episode_number}. ${escapeHTML(episode.name || `Episode ${episode.episode_number}`)}</strong>
-                    <small>${episode.runtime ? `${episode.runtime}m` : ''}</small>
+                    <small>${episode.runtime ? `${episode.runtime}m` : ""}</small>
                   </span>
                   <span class="preplay-episode-overview">
-                    ${escapeHTML(episode.overview || 'No episode description available.')}
+                    ${escapeHTML(episode.overview || "No episode description available.")}
                   </span>
                 </span>
               </button>
             `;
-          }).join('')
+            })
+            .join("")
         : '<p class="preplay-episode-empty">No episodes are available for this season.</p>';
 
-      list
-        .querySelectorAll('[data-preplay-episode]')
-        .forEach(button => {
-          button.addEventListener('click', async () => {
-            const episodeNumber = Number(button.dataset.preplayEpisode);
-            close();
-            await onSelect?.(activeSeasonNumber, episodeNumber);
-          });
+      list.querySelectorAll("[data-preplay-episode]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const episodeNumber = Number(button.dataset.preplayEpisode);
+          close();
+          await onSelect?.(activeSeasonNumber, episodeNumber);
         });
+      });
     } catch (error) {
-      console.warn('Episode picker unavailable:', error);
-      list.className = 'preplay-episode-loading';
-      list.textContent = 'Could not load episodes. Please try again.';
+      console.warn("Episode picker unavailable:", error);
+      list.className = "preplay-episode-loading";
+      list.textContent = "Could not load episodes. Please try again.";
     }
   };
 
-  const seasonWrap = overlay.querySelector('.season-select-wrap');
-  const seasonMenu = overlay.querySelector('[data-preplay-season-menu]');
-  const seasonToggle = overlay.querySelector('[data-preplay-season-toggle]');
-  const seasonLabel = overlay.querySelector('[data-preplay-season-label]');
+  const seasonWrap = overlay.querySelector(".season-select-wrap");
+  const seasonMenu = overlay.querySelector("[data-preplay-season-menu]");
+  const seasonToggle = overlay.querySelector("[data-preplay-season-toggle]");
+  const seasonLabel = overlay.querySelector("[data-preplay-season-label]");
 
-  seasonToggle?.addEventListener('click', event => {
+  seasonToggle?.addEventListener("click", (event) => {
     event.stopPropagation();
 
-    const isOpen = seasonMenu?.classList.toggle('open');
-    seasonWrap?.classList.toggle('open', isOpen);
-    seasonToggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
+    const isOpen = seasonMenu?.classList.toggle("open");
+    seasonWrap?.classList.toggle("open", isOpen);
+    seasonToggle.setAttribute("aria-expanded", String(Boolean(isOpen)));
   });
 
-  seasonMenu?.querySelectorAll('[data-preplay-season-option]').forEach(button => {
-    button.addEventListener('click', event => {
-      event.stopPropagation();
+  seasonMenu
+    ?.querySelectorAll("[data-preplay-season-option]")
+    .forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
 
-      activeEpisodeNumber = 1;
-      activeSeasonNumber = Number(button.dataset.preplaySeasonOption);
+        activeEpisodeNumber = 1;
+        activeSeasonNumber = Number(button.dataset.preplaySeasonOption);
 
-      seasonLabel.textContent = button.textContent.trim();
-      seasonMenu.classList.remove('open');
-      seasonWrap.classList.remove('open');
-      seasonToggle.setAttribute('aria-expanded', 'false');
+        seasonLabel.textContent = button.textContent.trim();
+        seasonMenu.classList.remove("open");
+        seasonWrap.classList.remove("open");
+        seasonToggle.setAttribute("aria-expanded", "false");
 
-      seasonMenu.querySelectorAll('[data-preplay-season-option]').forEach(option => {
-        const isActive = option === button;
-        option.classList.toggle('active', isActive);
-        option.setAttribute('aria-selected', String(isActive));
+        seasonMenu
+          .querySelectorAll("[data-preplay-season-option]")
+          .forEach((option) => {
+            const isActive = option === button;
+            option.classList.toggle("active", isActive);
+            option.setAttribute("aria-selected", String(isActive));
+          });
+
+        renderSeason(activeSeasonNumber);
       });
-
-      renderSeason(activeSeasonNumber);
     });
-  });
 
   await renderSeason(activeSeasonNumber);
 }
@@ -1150,7 +1206,7 @@ function chevronDownIcon() {
 }
 
 function renderActors(featuredActor, actors, title, escapeHTML, IMG_W500) {
-  if (!featuredActor) return '';
+  if (!featuredActor) return "";
 
   return `
     <aside class="preplay-actors">
@@ -1160,13 +1216,15 @@ function renderActors(featuredActor, actors, title, escapeHTML, IMG_W500) {
       </div>
 
       <div class="preplay-actor-row">
-        ${actors.map((actor, index) => `
+        ${actors
+          .map(
+            (actor, index) => `
           <button
             type="button"
-            class="preplay-actor-option ${index === 0 ? 'active' : ''}"
+            class="preplay-actor-option ${index === 0 ? "active" : ""}"
             data-actor-index="${index}"
             data-actor-option-name="${escapeHTML(actor.name)}"
-            data-actor-option-character="${escapeHTML(actor.character || 'a featured role')}"
+            data-actor-option-character="${escapeHTML(actor.character || "a featured role")}"
             aria-label="${escapeHTML(actor.name)}"
             title="${escapeHTML(actor.name)}"
           >
@@ -1175,7 +1233,9 @@ function renderActors(featuredActor, actors, title, escapeHTML, IMG_W500) {
               alt="${escapeHTML(actor.name)}"
             />
           </button>
-        `).join('')}
+        `,
+          )
+          .join("")}
       </div>
 
       <div class="preplay-featured-actor">
@@ -1184,7 +1244,7 @@ function renderActors(featuredActor, actors, title, escapeHTML, IMG_W500) {
         </strong>
 
         <p data-featured-actor-copy>
-          Plays ${escapeHTML(featuredActor.character || 'a featured role')} in ${escapeHTML(title)}.
+          Plays ${escapeHTML(featuredActor.character || "a featured role")} in ${escapeHTML(title)}.
         </p>
       </div>
     </aside>
@@ -1192,36 +1252,32 @@ function renderActors(featuredActor, actors, title, escapeHTML, IMG_W500) {
 }
 
 function wireActors(app, title) {
-  app
-    .querySelectorAll('[data-actor-index]')
-    .forEach(button => {
-      button.onclick = () => {
-        app
-          .querySelectorAll('[data-actor-index]')
-          .forEach(actorButton => {
-            actorButton.classList.toggle('active', actorButton === button);
-          });
+  app.querySelectorAll("[data-actor-index]").forEach((button) => {
+    button.onclick = () => {
+      app.querySelectorAll("[data-actor-index]").forEach((actorButton) => {
+        actorButton.classList.toggle("active", actorButton === button);
+      });
 
-        const name = button.dataset.actorOptionName;
-        const character = button.dataset.actorOptionCharacter;
+      const name = button.dataset.actorOptionName;
+      const character = button.dataset.actorOptionCharacter;
 
-        /*
-         * IMPORTANT:
-         * The old code used data-actor-name on BOTH the actor buttons and the
-         * selected-actor text. querySelector() therefore grabbed the first
-         * actor button and textContent replaced its <img>, making the photo
-         * disappear. These dedicated selectors keep the thumbnails intact.
-         */
-        const nameTarget = app.querySelector('[data-featured-actor-name]');
-        const copyTarget = app.querySelector('[data-featured-actor-copy]');
+      /*
+       * IMPORTANT:
+       * The old code used data-actor-name on BOTH the actor buttons and the
+       * selected-actor text. querySelector() therefore grabbed the first
+       * actor button and textContent replaced its <img>, making the photo
+       * disappear. These dedicated selectors keep the thumbnails intact.
+       */
+      const nameTarget = app.querySelector("[data-featured-actor-name]");
+      const copyTarget = app.querySelector("[data-featured-actor-copy]");
 
-        if (nameTarget) {
-          nameTarget.textContent = name;
-        }
+      if (nameTarget) {
+        nameTarget.textContent = name;
+      }
 
-        if (copyTarget) {
-          copyTarget.textContent = `Plays ${character} in ${title}.`;
-        }
-      };
-    });
+      if (copyTarget) {
+        copyTarget.textContent = `Plays ${character} in ${title}.`;
+      }
+    };
+  });
 }
